@@ -13,6 +13,7 @@ import { Message } from "@/types/messages/messages-types";
 import { Send, StopCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactTextareaAutosize from "react-textarea-autosize";
+import { searchExa } from "@/lib/exa-api";
 
 export default function Home() {
   const abortController = useRef<AbortController | null>(null);
@@ -21,11 +22,14 @@ export default function Home() {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [model, setModel] = useState<"o1-preview" | "o1-mini">("o1-mini");
+  const [model, setModel] = useState<"gpt-4o" | "gpt-4o-mini">("gpt-4o-mini");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAborted, setIsAborted] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     const storedChats = getLocalStorageItem<Chat[]>("chats") || [];
@@ -185,6 +189,14 @@ export default function Home() {
     scrollToBottom();
   }, [messages]);
 
+  const handleExaSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    const results = await searchExa(searchQuery.trim());
+    setSearchResults(results);
+    setIsSearching(false);
+  };
+
   return (
     <div className="h-screen flex bg-background">
       <Sidebar
@@ -197,7 +209,7 @@ export default function Home() {
 
       <div className="flex flex-col flex-1 gap-4">
         <div className="flex items-center justify-between w-full max-w-[1800px] p-4">
-          <div className="text-xl font-bold">o1 Playground</div>
+          <div className="text-xl font-bold">kukachat</div>
 
           <div className="flex items-center gap-4">
             <div className="flex justify-between items-center w-[200px]">
@@ -218,51 +230,85 @@ export default function Home() {
           </div>
         </div>
 
-        <ScrollArea
-          className="flex-1 overflow-hidden"
-          ref={scrollAreaRef}
-        >
-          <div className="w-full max-w-[1000px] mx-auto">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={cn("mb-4 flex", message.role === "user" ? "justify-end" : "justify-start", isGenerating && message.id.startsWith("loading-") && "animate-pulse")}
-              >
-                <div className={`px-4 py-2 max-w-[600px] rounded ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
-                  <MessageMarkdown
-                    role={message.role}
-                    content={message.content}
-                  />
-                </div>
+        <div className="flex-1 flex">
+          <div className="w-1/2 p-4">
+            <h2 className="text-lg font-semibold mb-4">Chat</h2>
+            <ScrollArea
+              className="flex-1 overflow-hidden"
+              ref={scrollAreaRef}
+            >
+              <div className="w-full max-w-[1000px] mx-auto">
+                {messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={cn("mb-4 flex", message.role === "user" ? "justify-end" : "justify-start", isGenerating && message.id.startsWith("loading-") && "animate-pulse")}
+                  >
+                    <div className={`px-4 py-2 max-w-[600px] rounded ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
+                      <MessageMarkdown
+                        role={message.role}
+                        content={message.content}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+
+              <div ref={endOfMessagesRef}></div>
+            </ScrollArea>
+
+            <div className="relative flex items-center mt-4 pb-6 w-full max-w-[800px] mx-auto">
+              <ReactTextareaAutosize
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                placeholder="Ask o1 anything..."
+                className="w-full resize-none rounded-md p-4 pr-12 bg-secondary/90 text-secondary-foreground focus:outline-none"
+                minRows={1}
+                maxRows={20}
+                onKeyDown={handleKeyDown}
+              />
+
+              {isGenerating ? (
+                <StopCircle
+                  onClick={handleStop}
+                  className="absolute right-[14px] top-[28px] transform -translate-y-1/2 cursor-pointer hover:opacity-80"
+                />
+              ) : (
+                <Send
+                  onClick={handleSubmit}
+                  className="absolute right-[14px] top-[28px] transform -translate-y-1/2 cursor-pointer text-primary hover:opacity-80"
+                />
+              )}
+            </div>
           </div>
 
-          <div ref={endOfMessagesRef}></div>
-        </ScrollArea>
-
-        <div className="relative flex items-center mt-4 pb-6 w-full max-w-[800px] mx-auto">
-          <ReactTextareaAutosize
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            placeholder="Ask o1 anything..."
-            className="w-full resize-none rounded-md p-4 pr-12 bg-secondary/90 text-secondary-foreground focus:outline-none"
-            minRows={1}
-            maxRows={20}
-            onKeyDown={handleKeyDown}
-          />
-
-          {isGenerating ? (
-            <StopCircle
-              onClick={handleStop}
-              className="absolute right-[14px] top-[28px] transform -translate-y-1/2 cursor-pointer hover:opacity-80"
-            />
-          ) : (
-            <Send
-              onClick={handleSubmit}
-              className="absolute right-[14px] top-[28px] transform -translate-y-1/2 cursor-pointer text-primary hover:opacity-80"
-            />
-          )}
+          <div className="w-1/2 p-4 border-l">
+            <h2 className="text-lg font-semibold mb-4">kuka search</h2>
+            <div className="flex mb-4">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search with kuka..."
+                className="flex-1 p-2 rounded-l-md border border-r-0 focus:outline-none"
+              />
+              <button
+                onClick={handleExaSearch}
+                disabled={isSearching}
+                className="bg-primary text-primary-foreground px-4 py-2 rounded-r-md hover:bg-primary/90 disabled:opacity-50"
+              >
+                {isSearching ? 'Searching...' : 'Search'}
+              </button>
+            </div>
+            <ScrollArea className="h-[calc(100vh-200px)]">
+              {searchResults.map((result, index) => (
+                <div key={index} className="mb-4 p-4 bg-secondary rounded-md">
+                  <h3 className="font-semibold">{result.title}</h3>
+                  <p className="text-sm text-muted-foreground">{result.url}</p>
+                  <p className="mt-2">{result.snippet}</p>
+                </div>
+              ))}
+            </ScrollArea>
+          </div>
         </div>
       </div>
     </div>

@@ -4,12 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { SelectValue } from "@radix-ui/react-select";
 
 interface ModelSelectProps {
-  model: "o1-preview" | "o1-mini";
-  onSelect: (model: "o1-preview" | "o1-mini") => void;
+  model: "gpt-4o" | "gpt-4o-mini";
+  onSelect: (model: "gpt-4o" | "gpt-4o-mini") => void;
 }
 
 export default function ModelSelect({ model, onSelect }: ModelSelectProps) {
-  const handleSelect = (value: "o1-preview" | "o1-mini") => {
+  const handleSelect = (value: "gpt-4o" | "gpt-4o-mini") => {
     onSelect(value);
   };
 
@@ -22,8 +22,8 @@ export default function ModelSelect({ model, onSelect }: ModelSelectProps) {
         <SelectValue placeholder="Select Model" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="o1-mini">o1 Mini</SelectItem>
-        <SelectItem value="o1-preview">o1 Preview</SelectItem>
+        <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
+        <SelectItem value="gpt-4o">GPT-4o</SelectItem>
       </SelectContent>
     </Select>
   );

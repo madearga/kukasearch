@@ -5,5 +5,5 @@ export interface Chat {
   name: string;
   messages: Message[];
   createdAt: Date;
-  model: "o1-preview" | "o1-mini";
+  model: "gpt-4o" | "gpt-4o-mini";
 }

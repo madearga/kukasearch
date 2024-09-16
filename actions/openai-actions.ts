@@ -11,7 +11,7 @@ const openai = createOpenAI({
 });
 
 export async function generateMessage(
-  model: "o1-preview" | "o1-mini",
+  model: "gpt-4o" | "gpt-4o-mini",
   messages: Message[]
 ) {
   const { text } = await generateText({
