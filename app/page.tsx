@@ -28,14 +28,20 @@ export default function Home() {
   const [isAborted, setIsAborted] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [category, setCategory] = useState('all');
+  const [publishDate, setPublishDate] = useState('any');
+  const [domainFilter, setDomainFilter] = useState('');
+  const [phraseFilter, setPhraseFilter] = useState('');
+  const [numResults, setNumResults] = useState(10);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [category, setCategory] = useState<string>("all");
-  const [publishDate, setPublishDate] = useState<string>("any");
-  const [domainFilter, setDomainFilter] = useState<string>("");
-  const [phraseFilter, setPhraseFilter] = useState<string>("");
-  const [numResults, setNumResults] = useState<number>(30);
+  const [error, setError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     const storedChats = getLocalStorageItem<Chat[]>("chats") || [];
@@ -198,16 +204,27 @@ export default function Home() {
   const handleExaSearch = async () => {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
-    const results = await searchExa(searchQuery.trim(), {
-      category,
-      publishDate,
-      domainFilter,
-      phraseFilter,
-      numResults
-    });
-    setSearchResults(results);
-    setIsSearching(false);
+    setError(null);
+    try {
+      const results = await searchExa(searchQuery.trim(), {
+        category,
+        publishDate,
+        domainFilter,
+        phraseFilter,
+        numResults
+      });
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Error during search:', error);
+      setError('An error occurred while searching. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
   };
+
+  if (!isClient) {
+    return null; // or a loading spinner
+  }
 
   return (
     <div className="h-screen flex bg-background">
@@ -319,10 +336,15 @@ export default function Home() {
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="company">Company</SelectItem>
                   <SelectItem value="news">News</SelectItem>
-                  <SelectItem value="academic">Academic</SelectItem>
-                  {/* Add more categories as needed */}
+                  <SelectItem value="paper">Paper</SelectItem>
+                  <SelectItem value="tweet">Tweet</SelectItem>
+                  <SelectItem value="blog_post">Blog post</SelectItem>
+                  <SelectItem value="pdf">PDF</SelectItem>
+                  <SelectItem value="github">Github</SelectItem>
+                  <SelectItem value="personal_site">Personal site</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -384,6 +406,8 @@ export default function Home() {
                 </div>
               ))}
             </ScrollArea>
+
+            {error && <div className="text-red-500 mt-2">{error}</div>}
           </div>
         </div>
       </div>
