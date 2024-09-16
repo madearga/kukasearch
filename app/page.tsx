@@ -14,6 +14,7 @@ import { Send, StopCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactTextareaAutosize from "react-textarea-autosize";
 import { searchExa } from "@/lib/exa-api";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Home() {
   const abortController = useRef<AbortController | null>(null);
@@ -30,6 +31,11 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [category, setCategory] = useState<string>("all");
+  const [publishDate, setPublishDate] = useState<string>("any");
+  const [domainFilter, setDomainFilter] = useState<string>("");
+  const [phraseFilter, setPhraseFilter] = useState<string>("");
+  const [numResults, setNumResults] = useState<number>(30);
 
   useEffect(() => {
     const storedChats = getLocalStorageItem<Chat[]>("chats") || [];
@@ -192,7 +198,13 @@ export default function Home() {
   const handleExaSearch = async () => {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
-    const results = await searchExa(searchQuery.trim());
+    const results = await searchExa(searchQuery.trim(), {
+      category,
+      publishDate,
+      domainFilter,
+      phraseFilter,
+      numResults
+    });
     setSearchResults(results);
     setIsSearching(false);
   };
@@ -283,26 +295,90 @@ export default function Home() {
 
           <div className="w-1/2 p-4 border-l">
             <h2 className="text-lg font-semibold mb-4">kuka search</h2>
-            <div className="flex mb-4">
+            
+            <div className="flex mb-6">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search with kuka..."
-                className="flex-1 p-2 rounded-l-md border border-r-0 focus:outline-none"
+                className="flex-1 p-3 text-lg rounded-l-md border border-r-0 focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <button
                 onClick={handleExaSearch}
                 disabled={isSearching}
-                className="bg-primary text-primary-foreground px-4 py-2 rounded-r-md hover:bg-primary/90 disabled:opacity-50"
+                className="bg-primary text-primary-foreground px-6 py-3 text-lg rounded-r-md hover:bg-primary/90 disabled:opacity-50"
               >
                 {isSearching ? 'Searching...' : 'Search'}
               </button>
             </div>
-            <ScrollArea className="h-[calc(100vh-200px)]">
+
+            <div className="space-y-4">
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="news">News</SelectItem>
+                  <SelectItem value="academic">Academic</SelectItem>
+                  {/* Add more categories as needed */}
+                </SelectContent>
+              </Select>
+              
+              <Select value={publishDate} onValueChange={setPublishDate}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Publish Date" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any time</SelectItem>
+                  <SelectItem value="day">Past 24 hours</SelectItem>
+                  <SelectItem value="week">Past week</SelectItem>
+                  <SelectItem value="month">Past month</SelectItem>
+                  <SelectItem value="year">Past year</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <input
+                type="text"
+                value={domainFilter}
+                onChange={(e) => setDomainFilter(e.target.value)}
+                placeholder="Domain filter"
+                className="w-full p-2 rounded-md border"
+              />
+              
+              <input
+                type="text"
+                value={phraseFilter}
+                onChange={(e) => setPhraseFilter(e.target.value)}
+                placeholder="Phrase filter"
+                className="w-full p-2 rounded-md border"
+              />
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Number of results: {numResults}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="100"
+                  value={numResults}
+                  onChange={(e) => setNumResults(Number(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <ScrollArea className="h-[calc(100vh-500px)]">
               {searchResults.map((result, index) => (
                 <div key={index} className="mb-4 p-4 bg-secondary rounded-md">
-                  <h3 className="font-semibold">{result.title}</h3>
+                  <a
+                    href={result.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    {result.title}
+                  </a>
                   <p className="text-sm text-muted-foreground">{result.url}</p>
                   <p className="mt-2">{result.snippet}</p>
                 </div>
